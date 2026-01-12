@@ -1,0 +1,192 @@
+{
+  "name": "Job Search Automation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "jobTitle",
+              "value": "Software Engineer"
+            },
+            {
+              "name": "location",
+              "value": "Remote"
+            },
+            {
+              "name": "keywords",
+              "value": "Python, JavaScript"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Active Search",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://www.linkedin.com/jobs/search/",
+        "method": "GET",
+        "options": {}
+      },
+      "id": "3",
+      "name": "LinkedIn Job Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex"
+      },
+      "id": "4",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process and filter job listings\nconst items = $input.all();\nconst processedJobs = [];\n\nfor (const item of items) {\n  // Extract job details\n  const job = {\n    title: item.json.title || 'N/A',\n    company: item.json.company || 'N/A',\n    location: item.json.location || 'N/A',\n    description: item.json.description || 'N/A',\n    url: item.json.url || 'N/A',\n    postedDate: item.json.postedDate || 'N/A',\n    salary: item.json.salary || 'Not specified'\n  };\n  \n  processedJobs.push({ json: job });\n}\n\nreturn processedJobs;"
+      },
+      "id": "5",
+      "name": "Process Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.title }}",
+              "operation": "contains",
+              "value2": "Engineer"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Filter Relevant Jobs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "spreadsheetId": {
+          "__rl": true,
+          "value": "your-spreadsheet-id",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Job Listings",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "7",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Active Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Active Search": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Job Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Job Scraper": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Process Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Jobs": {
+      "main": [
+        [
+          {
+            "node": "Filter Relevant Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Relevant Jobs": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-12T00:00:00.000Z",
+  "versionId": "1"
+}
